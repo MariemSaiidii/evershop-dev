@@ -1,16 +1,18 @@
 FROM node:18-alpine
 WORKDIR /app
-RUN npm install -g npm@9
+
+# Copy package files and install dependencies
 COPY package*.json .
-COPY packages ./packages
-COPY themes ./themes
-COPY extensions ./extensions
-COPY public ./public
-COPY media ./media
-COPY config ./config
-COPY translations ./translations
 RUN npm install
+
+# Copy all application files
+COPY . .
+
+# Build the application
 RUN npm run build
 
-EXPOSE 80
+# Expose the default Evershop port
+EXPOSE 3000
+
+# Start the application
 CMD ["npm", "run", "start"]
