@@ -1,0 +1,47 @@
+# PostgreSQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-postgres
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+  selector:
+    app: postgres
+
+---
+# PostgreSQL Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-postgres
+spec:
+  replicas: {{ .Values.postgres.replicaCount }}
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
+          imagePullPolicy: {{ .Values.postgres.imagePullPolicy }}
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_PASSWORD
+              value: "{{ .Values.postgres.password }}"
+            - name: POSTGRES_USER
+              value: "{{ .Values.postgres.user }}"
+            - name: POSTGRES_DB
+              value: "{{ .Values.postgres.dbName }}"
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: pgdata
+          emptyDir: {}  # Ephemeral storage; data lost on pod restart (use PVC for persistence)

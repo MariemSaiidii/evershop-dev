@@ -1,0 +1,6 @@
+apiVersion: v2
+name: evershop
+description: Helm chart for deploying EverShop with Postgres
+type: application
+version: 0.1.0
+appVersion: "1.0"

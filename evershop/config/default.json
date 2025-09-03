@@ -1,11 +1,11 @@
 {
   "system": {
     "database": {
-      "host": "localhost",
-      "port": 5432,
-      "user": "postgres",
-      "password": "admin",
-      "database": "my_evershop",
+      "host": "${DB_HOST}",
+      "port": "${DB_PORT}",
+      "user": "${DB_USER}",
+      "password": "${DB_PASSWORD}",
+      "database": "${DB_NAME}",
       "createDatabaseIfNotExist": true,
       "sslmode": "disable"
     },

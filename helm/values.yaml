@@ -1,0 +1,21 @@
+# EverShop app values
+evershop:
+  replicaCount: 1
+  image:
+    repository: mariem631/evershop
+    tag: latest 
+  imagePullPolicy: IfNotPresent  # Pull from Docker Hub if not present
+  containerPort: 3000
+  nodePort: 30001  # External port for NodePort service
+
+# PostgreSQL values
+postgres:
+  replicaCount: 1
+  image:
+    repository: postgres
+    tag: "16"
+  imagePullPolicy: IfNotPresent
+  port: 5432
+  user: postgres
+  password: admin
+  dbName: my_evershop
