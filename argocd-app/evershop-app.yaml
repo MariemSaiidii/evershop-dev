@@ -9,6 +9,9 @@ spec:
     repoURL: 'https://github.com/MariemSaiidii/evershop-dev.git'
     targetRevision: main
     path: helm
+    helm:       # Add Helm config for consistency
+      valueFiles:
+        - values.yaml  # Use the values.yaml in helm/ directly
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: default
