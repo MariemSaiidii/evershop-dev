@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: 'https://github.com/MariemSaiidii/evershop-dev.git'
     targetRevision: main
-    path: argocd-app
+    path: helm
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: default
