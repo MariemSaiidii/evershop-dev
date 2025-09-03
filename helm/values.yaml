@@ -6,7 +6,7 @@ evershop:
     tag: latest 
   imagePullPolicy: IfNotPresent  # Pull from Docker Hub if not present
   containerPort: 3000
-  nodePort: 30001  # External port for NodePort service
+  nodePort: 30002 # External port for NodePort service
 
 # PostgreSQL values
 postgres:
