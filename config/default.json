@@ -1,0 +1,15 @@
+{
+  "system": {
+    "database": {
+      "host": "localhost",
+      "port": 5432,
+      "user": "postgres",
+      "password": "admin",
+      "database": "my_evershop",
+      "createDatabaseIfNotExist": true,
+      "sslmode": "disable"
+    },
+    "theme": "eve",
+    "extensions": []
+  }
+}
