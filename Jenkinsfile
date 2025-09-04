@@ -1,5 +1,40 @@
 pipeline {
-    agent any  // Run on local Jenkins executor (no Kubernetes needed)
+    agent {
+        kubernetes {
+            cloud 'minikube-cloud'  // Name of the cloud you configured
+            yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+    - name: jnlp
+    image: jenkins/inbound-agent:latest
+    tty: true
+  - name: docker
+    image: docker:24.0.7
+    command:
+    - cat
+    tty: true
+  - name: dind
+    image: docker:24.0.7-dind
+    securityContext:
+      privileged: true
+    tty: true
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "1024Mi"
+"""
+        }
+    }
+
+//use a multi-container pod
+//jnlp: Handles Jenkins agent communication.
+//docker: Uses the docker:24.0.7 image, which includes the Docker CLI, to run build commands.
+//dind: Runs the Docker daemon in privileged mode for DinD support.
 
     environment {
         // Load Jenkins credentials securely
@@ -11,22 +46,21 @@ pipeline {
         
         // Unique Docker image tag (build number)
         IMAGE_TAG = "build-${BUILD_NUMBER}"
+
+        DOCKER_HOST = 'tcp://localhost:2375'  // DinD default port
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                git(
-                    credentialsId: 'github-creds',
-                    url: 'https://github.com/MariemSaiidii/evershop-dev.git',
-                    branch: 'main'
-                )
+                git(credentialsId: 'github-creds', url: 'https://github.com/MariemSaiidii/evershop-dev.git', branch: 'main')
             }
         }
 
         stage('Build & Push Docker Image') {
             steps {
-                sh """
+                container('docker') {
+                    sh """
                     echo "🔑 Logging into DockerHub..."
                     echo "${DOCKERHUB_CREDENTIALS_PSW}" | docker login -u "${DOCKERHUB_CREDENTIALS_USR}" --password-stdin
 
@@ -35,38 +69,46 @@ pipeline {
 
                     echo "🚀 Pushing Docker image..."
                     docker push $DOCKERHUB_REPO:${IMAGE_TAG}
-                """
+                    """
+                }
             }
         }
 
         stage('Update Helm Values & Push') {
             steps {
-                script {
-                    // Update Helm values.yaml with the new Docker image
-                    sh """
+                container('docker') {
+                    sh '''
+                    apt-get update
+                    apt-get install -y git openssh-client
+                    '''
+                    script {
+                        sh """
                         echo "📝 Updating helm/values.yaml with new Docker image..."
                         sed -i 's|repository: .*|repository: $DOCKERHUB_REPO|' helm/values.yaml
                         sed -i 's|tag: .*|tag: ${IMAGE_TAG}|' helm/values.yaml
-                    """
+                        """
 
-                    // Commit and push changes to GitHub securely
-                    sshagent(credentials: ['github-creds']) {
-                        sh """
+                        sshagent(credentials: ['github-creds']) {
+                            sh """
                             git config user.email "ci@jenkins"
                             git config user.name "Jenkins CI"
                             git add helm/values.yaml
                             git commit -m "Update Docker image to ${IMAGE_TAG}" || echo "No changes to commit"
                             git push origin main
-                        """
+                            """
+                        }
                     }
                 }
             }
         }
 
-        stage('Deploy with Helm (optional)') {
-            steps {
-                echo "✅ Helm deploy stage is optional for now. Enable when Minikube is reachable from Jenkins."
+        //stage('Deploy with Helm') {
+           // steps {
+             //   sh """
+             //   echo "🚀 Deploying app using Helm..."
+              //  helm upgrade --install evershop ./helm -f helm/values.yaml
+              //  """
             }
-        }
+       // }
     }
-}
+
