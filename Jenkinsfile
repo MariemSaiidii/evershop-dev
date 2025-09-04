@@ -7,14 +7,20 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
+  
   - name: jnlp
     image: jenkins/inbound-agent:latest
     tty: true
+
   - name: docker
     image: docker:24.0.7
     command:
     - cat
     tty: true
+    env:
+    - name: DOCKER_HOST
+      value: "tcp://localhost:2376"
+
   - name: dind
     image: docker:24.0.7-dind
     securityContext:

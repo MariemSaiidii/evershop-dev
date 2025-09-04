@@ -8,6 +8,9 @@ controller:
       welcome-message: |
         jenkins:
           systemMessage: "Welcome to Jenkins on Minikube!"
+  service:
+    ports:
+      jnlp: 50000      
   # Admin login for Jenkins (you can change later or move into Kubernetes secrets)
   admin:
     username: admin
