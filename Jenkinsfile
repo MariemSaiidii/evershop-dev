@@ -1,6 +1,5 @@
 pipeline {
-     agent any  // Run on local Jenkins executor (no Kubernetes needed)
-
+    agent any  // Run on local Jenkins executor (no Kubernetes needed)
 
     environment {
         // Load Jenkins credentials securely
@@ -17,14 +16,17 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                git(credentialsId: 'github-creds', url: 'https://github.com/MariemSaiidii/evershop-dev.git', branch: 'main')
+                git(
+                    credentialsId: 'github-creds',
+                    url: 'https://github.com/MariemSaiidii/evershop-dev.git',
+                    branch: 'main'
+                )
             }
         }
 
         stage('Build & Push Docker Image') {
             steps {
-                container('docker') {
-                    sh """
+                sh """
                     echo "🔑 Logging into DockerHub..."
                     echo "${DOCKERHUB_CREDENTIALS_PSW}" | docker login -u "${DOCKERHUB_CREDENTIALS_USR}" --password-stdin
 
@@ -33,41 +35,38 @@ pipeline {
 
                     echo "🚀 Pushing Docker image..."
                     docker push $DOCKERHUB_REPO:${IMAGE_TAG}
-                    """
-                }
+                """
             }
         }
 
         stage('Update Helm Values & Push') {
             steps {
                 script {
-                    // Update Helm values.yaml with new image
+                    // Update Helm values.yaml with the new Docker image
                     sh """
-                    echo "📝 Updating helm/values.yaml with new Docker image..."
-                    sed -i 's|repository: .*|repository: $DOCKERHUB_REPO|' helm/values.yaml
-                    sed -i 's|tag: .*|tag: ${IMAGE_TAG}|' helm/values.yaml
+                        echo "📝 Updating helm/values.yaml with new Docker image..."
+                        sed -i 's|repository: .*|repository: $DOCKERHUB_REPO|' helm/values.yaml
+                        sed -i 's|tag: .*|tag: ${IMAGE_TAG}|' helm/values.yaml
                     """
 
-                    // Commit and push changes using SSH credentials (safe)
+                    // Commit and push changes to GitHub securely
                     sshagent(credentials: ['github-creds']) {
                         sh """
-                        git config user.email "ci@jenkins"
-                        git config user.name "Jenkins CI"
-                        git add helm/values.yaml
-                        git commit -m "Update Docker image to ${IMAGE_TAG}" || echo "No changes to commit"
-                        git push origin main
+                            git config user.email "ci@jenkins"
+                            git config user.name "Jenkins CI"
+                            git add helm/values.yaml
+                            git commit -m "Update Docker image to ${IMAGE_TAG}" || echo "No changes to commit"
+                            git push origin main
                         """
                     }
                 }
             }
         }
 
-        //stage('Deploy with Helm') {
-           // steps {
-             //   sh """
-             //   echo "🚀 Deploying app using Helm..."
-              //  helm upgrade --install evershop ./helm -f helm/values.yaml
-              //  """
+        stage('Deploy with Helm (optional)') {
+            steps {
+                echo "✅ Helm deploy stage is optional for now. Enable when Minikube is reachable from Jenkins."
             }
-       // }
+        }
     }
+}
