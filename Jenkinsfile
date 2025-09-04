@@ -7,7 +7,7 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
-    - name: jnlp
+  - name: jnlp
     image: jenkins/inbound-agent:latest
     tty: true
   - name: docker
@@ -31,22 +31,11 @@ spec:
         }
     }
 
-//use a multi-container pod
-//jnlp: Handles Jenkins agent communication.
-//docker: Uses the docker:24.0.7 image, which includes the Docker CLI, to run build commands.
-//dind: Runs the Docker daemon in privileged mode for DinD support.
-
     environment {
-        // Load Jenkins credentials securely
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
         GITHUB_CREDENTIALS = credentials('github-creds')
-
-        // Docker repo
         DOCKERHUB_REPO = "mariem631/evershop"
-        
-        // Unique Docker image tag (build number)
         IMAGE_TAG = "build-${BUILD_NUMBER}"
-
         DOCKER_HOST = 'tcp://localhost:2375'  // DinD default port
     }
 
@@ -103,12 +92,12 @@ spec:
         }
 
         //stage('Deploy with Helm') {
-           // steps {
-             //   sh """
-             //   echo "🚀 Deploying app using Helm..."
-              //  helm upgrade --install evershop ./helm -f helm/values.yaml
-              //  """
-            }
-       // }
+        //    steps {
+        //        sh """
+        //        echo "🚀 Deploying app using Helm..."
+        //        helm upgrade --install evershop ./helm -f helm/values.yaml
+        //        """
+        //    }
+        //}
     }
-
+}
