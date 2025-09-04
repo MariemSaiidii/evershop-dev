@@ -1,0 +1,57 @@
+#This file customizes Jenkins installation with: Persistent volume , Admin user setup , Docker-in-Docker support ,Service type NodePort (so you can access UI easily)
+#Customizations: The jenkins-values.yaml file is critical for tailoring Jenkins to your needs (e.g., plugins, ingress, or storage).
+#This file tells Helm how to configure Jenkins.
+controller:
+  JCasC:
+    enabled: true
+    configScripts:
+      welcome-message: |
+        jenkins:
+          systemMessage: "Welcome to Jenkins on Minikube!"
+  # Admin login for Jenkins (you can change later or move into Kubernetes secrets)
+  admin:
+    username: admin
+    password: admin
+   # Expose Jenkins on NodePort so you can access it in browser
+  serviceType: NodePort
+  servicePort: 8081
+
+    # Install plugins that we need for Git + Docker + pipelines
+  installPlugins:
+    - kubernetes:latest             # Let Jenkins run agents in Kubernetes pods
+    - workflow-aggregator:latest    # Pipelines
+    - git:latest                    # Git support
+    - docker-workflow:latest        # Docker integration
+    - blueocean:latest              # Modern Jenkins UI
+    - credentials-binding:latest    # Secure secrets usage
+
+persistence:
+  enabled: true
+  storageClass: standard
+  size: 10Gi # Persistent volume for Jenkins home (keeps jobs/logs safe)
+
+# Enable agent pods to use Docker-in-Docker
+# Enable Jenkins to run builds in Kubernetes pods
+agent:
+  enabled: true
+  podTemplates:
+    docker: |   # Define a template pod that can run Docker
+      - name: docker
+        label: docker
+        image: docker:24.0.7-dind
+        privileged: true
+        ttyEnabled: true
+        resourceRequestCpu: "500m"
+        resourceLimitCpu: "1000m"
+        resourceRequestMemory: "512Mi"
+        resourceLimitMemory: "1024Mi"
+
+#📌 Key idea here:
+#Jenkins master runs in cluster.
+#Builds happen in agent pods.
+#We tell Jenkins: when a job needs Docker, spin up a pod running docker:dind.
+
+
+
+
+

@@ -19,3 +19,6 @@ postgres:
   user: postgres
   password: admin
   dbName: my_evershop
+
+
+
