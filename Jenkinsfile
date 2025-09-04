@@ -1,14 +1,13 @@
 pipeline {
     agent {
         kubernetes {
-            // Define the Jenkins agent pod (with Docker-in-Docker enabled)
             yaml """
 apiVersion: v1
 kind: Pod
 spec:
   containers:
     - name: docker
-      image: docker:24.0.7-dind   # Docker-in-Docker image
+      image: docker:24.0.7-dind
       command:
       - cat
       tty: true
@@ -19,12 +18,15 @@ spec:
     }
 
     environment {
-        // Load secrets from Jenkins credentials
+        // Load Jenkins credentials securely
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
         GITHUB_CREDENTIALS = credentials('github-creds')
 
-        // Your DockerHub repo (change if needed)
+        // Docker repo
         DOCKERHUB_REPO = "mariem631/evershop"
+        
+        // Unique Docker image tag (build number)
+        IMAGE_TAG = "build-${BUILD_NUMBER}"
     }
 
     stages {
@@ -42,30 +44,44 @@ spec:
                     echo "${DOCKERHUB_CREDENTIALS_PSW}" | docker login -u "${DOCKERHUB_CREDENTIALS_USR}" --password-stdin
 
                     echo "📦 Building Docker image..."
-                    docker build -t $DOCKERHUB_REPO:latest .
+                    docker build -t $DOCKERHUB_REPO:${IMAGE_TAG} .
 
                     echo "🚀 Pushing Docker image..."
-                    docker push $DOCKERHUB_REPO:latest
+                    docker push $DOCKERHUB_REPO:${IMAGE_TAG}
                     """
                 }
             }
         }
 
-        stage('Update Helm Values') {
+        stage('Update Helm Values & Push') {
+            steps {
+                script {
+                    // Update Helm values.yaml with new image
+                    sh """
+                    echo "📝 Updating helm/values.yaml with new Docker image..."
+                    sed -i 's|repository: .*|repository: $DOCKERHUB_REPO|' helm/values.yaml
+                    sed -i 's|tag: .*|tag: ${IMAGE_TAG}|' helm/values.yaml
+                    """
+
+                    // Commit and push changes using SSH credentials (safe)
+                    sshagent(credentials: ['github-creds']) {
+                        sh """
+                        git config user.email "ci@jenkins"
+                        git config user.name "Jenkins CI"
+                        git add helm/values.yaml
+                        git commit -m "Update Docker image to ${IMAGE_TAG}" || echo "No changes to commit"
+                        git push origin main
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Deploy with Helm') {
             steps {
                 sh """
-                echo "📝 Updating helm/values.yaml with new Docker image..."
-
-                # Replace the image tag in helm/values.yaml
-                sed -i 's|repository: .*|repository: $DOCKERHUB_REPO|' helm/values.yaml
-                sed -i 's|tag: .*|tag: latest|' helm/values.yaml
-
-                # Git commit & push
-                git config --global user.email "ci@jenkins"
-                git config --global user.name "Jenkins CI"
-                git add helm/values.yaml
-                git commit -m "Update image to latest"
-                git push https://${GITHUB_CREDENTIALS_USR}:${GITHUB_CREDENTIALS_PSW}@github.com/MariemSaiidii/evershop-dev.git main
+                echo "🚀 Deploying app using Helm..."
+                helm upgrade --install evershop ./helm -f helm/values.yaml
                 """
             }
         }
