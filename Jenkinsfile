@@ -1,21 +1,6 @@
 pipeline {
-    agent {
-        kubernetes {
-            yaml """
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-    - name: docker
-      image: docker:24.0.7-dind
-      command:
-      - cat
-      tty: true
-      securityContext:
-        privileged: true
-"""
-        }
-    }
+     agent any  // Run on local Jenkins executor (no Kubernetes needed)
+
 
     environment {
         // Load Jenkins credentials securely
@@ -77,13 +62,13 @@ spec:
             }
         }
 
-        stage('Deploy with Helm') {
-            steps {
-                sh """
-                echo "🚀 Deploying app using Helm..."
-                helm upgrade --install evershop ./helm -f helm/values.yaml
-                """
+        //stage('Deploy with Helm') {
+           // steps {
+             //   sh """
+             //   echo "🚀 Deploying app using Helm..."
+              //  helm upgrade --install evershop ./helm -f helm/values.yaml
+              //  """
             }
-        }
+       // }
     }
 }
