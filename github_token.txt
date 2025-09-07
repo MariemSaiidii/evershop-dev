@@ -1,4 +1,4 @@
-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
+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
 
 this is my GitHub PAT used for Jenkins to access the repo 
 Personal access tokens (classic) function like ordinary OAuth access tokens. They can be used instead of a password for Git over HTTPS, or can be used to authenticate to the API over Basic Authentication.

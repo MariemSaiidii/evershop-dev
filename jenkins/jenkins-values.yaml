@@ -11,7 +11,7 @@ controller:
           - kubernetes:
               name: "minikube-cloud"
               serverUrl: "https://kubernetes.default.svc"
-              namespace: "default"
+              namespace: "jenkins"
               jenkinsUrl: "http://jenkins.default.svc.cluster.local:8080"
               connectTimeout: 5
               readTimeout: 15
@@ -36,29 +36,32 @@ persistence:
   enabled: true
   storageClass: standard
   size: 10Gi
-
+  path: /mnt/data/jenkins-home   # MUST be mapped to a real Windows folder, e.g., C:\minikube-data\jenkins-home
 agent:
   enabled: true
-  podTemplates:
-    docker: |
-      - name: docker
-        label: docker
-        image: docker:24.0.7-dind
-        privileged: true
-        ttyEnabled: true
-        resourceRequestCpu: "500m"
-        resourceLimitCpu: "1000m"
-        resourceRequestMemory: "512Mi"
-        resourceLimitMemory: "1024Mi"
 
 serviceAccount:
   create: true
   name: "jenkins"
-  annotations: {}
 rbac:
   create: true
   readSecrets: true
   rules:
-  - apiGroups: ["*"]
-    resources: ["*"]
-    verbs: ["*"]
+    - apiGroups: [""]
+      resources: ["pods", "pods/log", "secrets"]
+      verbs: ["get", "list", "watch", "create", "delete", "update"]
+    - apiGroups: ["apps"]
+      resources: ["deployments"]
+      verbs: ["get", "list", "watch", "create", "update", "patch"]
+    - apiGroups: [""]
+      resources: ["services"]
+      verbs: ["get", "list", "create", "update"]
+    - apiGroups: ["batch"]
+      resources: ["jobs"]
+      verbs: ["get", "list", "create", "delete"]
+    - apiGroups: [""]
+      resources: ["persistentvolumeclaims"]
+      verbs: ["get", "list", "create", "delete"]
+    - apiGroups: [""]
+      resources: ["configmaps"]
+      verbs: ["get", "list", "create", "update"]
