@@ -15,7 +15,7 @@
   },
   "workspaces": [
     "extensions/*",
-    "themes/*"
+    "themes/eve"
   ],
   
   "keywords": [],
