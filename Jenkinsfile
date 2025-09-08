@@ -11,26 +11,29 @@ spec:
   - name: jnlp
     image: jenkins/inbound-agent:latest
     tty: true
+
   - name: docker
     image: docker:24.0.7
     command:
     - cat
     tty: true
-    volumeMounts:
-      - name: docker-sock
-        mountPath: /var/run/docker.sock
     env:
       - name: DOCKER_HOST
-        value: unix:///var/run/docker.sock
+        value: tcp://localhost:2375
+
   - name: git
     image: alpine/git:latest
     command:
     - cat
     tty: true
-  volumes:
-  - name: docker-sock
-    hostPath:
-      path: /var/run/docker.sock
+
+  - name: dind
+    image: docker:24.0.7-dind
+    securityContext:
+      privileged: true
+    args:
+      - --host=tcp://0.0.0.0:2375
+      - --storage-driver=overlay2
 """
         }
     }
@@ -54,13 +57,13 @@ spec:
                 container('docker') {
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sh '''
-echo "Logging into DockerHub..."
+echo " Logging into DockerHub..."
 echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 
-echo "Building image..."
+echo " Building image..."
 docker build -t $DOCKER_IMAGE:$IMAGE_TAG ./evershop
 
-echo "Pushing image..."
+echo " Pushing image..."
 docker push $DOCKER_IMAGE:$IMAGE_TAG
 
 # Optional: push latest tag
